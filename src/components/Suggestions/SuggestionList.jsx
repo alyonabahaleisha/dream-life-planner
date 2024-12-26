@@ -1,44 +1,89 @@
 import React from 'react';
-import { Button } from "../ui/button";
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import SuggestionButton from './SuggestionButton';
 import { initialSuggestions, moreSuggestions } from '../../data/suggestions';
 
-const SuggestionList = ({ onSuggestionClick }) => {
-  const [showMore, setShowMore] = React.useState(false);
-
+const ScrollingRow = ({ suggestions, direction = 'right', onSuggestionClick }) => {
+  const duplicatedSuggestions = [...suggestions, ...suggestions];
+  
   return (
-    <>
-      <div className="flex flex-wrap gap-2 justify-center px-4">
-        {initialSuggestions.map((suggestion, index) => (
+    <div className="relative w-full overflow-hidden">
+      <div 
+        className={`inline-flex gap-4 whitespace-nowrap ${
+          direction === 'left' ? 'scroll-reverse' : 'scroll-forward'
+        }`}
+      >
+        {duplicatedSuggestions.map((suggestion, index) => (
           <SuggestionButton
-            key={index}
+            key={`${suggestion}-${index}`}
             suggestion={suggestion}
             onClick={onSuggestionClick}
+            className="whitespace-nowrap flex-shrink-0"
           />
         ))}
-        
-        <Button
-          variant="outline"
-          className="bg-white shadow-md hover:shadow-lg rounded-full text-sm text-gray-700 font-normal transition-all flex items-center gap-1 px-4"
-          onClick={() => setShowMore(!showMore)}
-        >
-          More options {showMore ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        </Button>
       </div>
+    </div>
+  );
+};
 
-      {showMore && (
-        <div className="mt-2 flex flex-wrap gap-2 justify-center px-4">
-          {moreSuggestions.map((suggestion, index) => (
-            <SuggestionButton
-              key={index}
-              suggestion={suggestion}
-              onClick={onSuggestionClick}
-            />
-          ))}
-        </div>
-      )}
-    </>
+const SuggestionList = ({ onSuggestionClick }) => {
+  // Combine all suggestions
+  const allSuggestions = [...initialSuggestions, ...moreSuggestions];
+  
+  // Split into three roughly equal rows
+  const totalItems = allSuggestions.length;
+  const itemsPerRow = Math.ceil(totalItems / 3);
+  
+  const row1 = allSuggestions.slice(0, itemsPerRow);
+  const row2 = allSuggestions.slice(itemsPerRow, itemsPerRow * 2);
+  const row3 = allSuggestions.slice(itemsPerRow * 2);
+
+  return (
+    <div className="w-full space-y-4">
+      <style>
+        {`
+          @keyframes scrollForward {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+          
+          @keyframes scrollReverse {
+            from { transform: translateX(-50%); }
+            to { transform: translateX(0); }
+          }
+          
+          .scroll-forward {
+            animation: scrollForward 320s linear infinite;
+          }
+          
+          .scroll-reverse {
+            animation: scrollReverse 320s linear infinite;
+          }
+
+          /* Pause on hover */
+          .relative:hover > div {
+            animation-play-state: paused;
+          }
+        `}
+      </style>
+
+      <div className="space-y-2">
+        <ScrollingRow 
+          suggestions={row1} 
+          direction="right" 
+          onSuggestionClick={onSuggestionClick} 
+        />
+        <ScrollingRow 
+          suggestions={row2} 
+          direction="left" 
+          onSuggestionClick={onSuggestionClick} 
+        />
+        <ScrollingRow 
+          suggestions={row3} 
+          direction="right" 
+          onSuggestionClick={onSuggestionClick} 
+        />
+      </div>
+    </div>
   );
 };
 
