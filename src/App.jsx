@@ -134,7 +134,8 @@ function App() {
     setStory('');
     setImage(null);
     setShowResponse(true);
-
+    localStorage.setItem('dreamLife', dreamLife);
+    
     try {
       const generateImage = imageModel === 'dalle' ? generateDalleImage : generateStabilityImage;
       generateImage(dreamLife).then(imageData => {

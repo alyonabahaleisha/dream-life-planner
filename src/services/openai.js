@@ -1,3 +1,5 @@
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+
 // Image generation with DALL-E
 export const generateDalleImage = async (dreamLife) => {
     try {
@@ -77,7 +79,7 @@ export const generateDalleImage = async (dreamLife) => {
           'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-4o",
           messages: [
             {
               role: "user",
@@ -122,11 +124,135 @@ export const generateDalleImage = async (dreamLife) => {
       throw error;
     }
   };
+
+
+  export const generateQuestions = async (dreamLife) => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "Return responses in clean JSON format without markdown formatting or backticks."
+            },
+            {
+              role: "user",
+              content: `Generate 10 specific questions based on this dream life: "${dreamLife}". Focus on understanding current skills, finances, time availability, background, and timeline expectations. Return an array of questions in this exact format:
+              [
+                {
+                  "id": "q1",
+                  "section": "Current Skills",
+                  "question": "question text here",
+                  "options": [
+                    {"label": "option 1", "value": "value1"},
+                    {"label": "option 2", "value": "value2"},
+                    {"label": "option 3", "value": "value3"},
+                    {"label": "option 4", "value": "value4"}
+                  ]
+                }
+              ]`
+            }
+          ]
+        })
+      });
   
-  const simulateHumanTyping = async (text, onChunk) => {
-    const words = text.split(' ');
-    for (const word of words) {
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
-      onChunk(word + ' ');
+      if (!response.ok) {
+        throw new Error(response.status === 429 ? 'Rate limit exceeded' : `API error: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      if (!data?.choices?.[0]?.message?.content) {
+        throw new Error('Invalid API response');
+      }
+  
+      const content = data.choices[0].message.content;
+      try {
+        return JSON.parse(content);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+        return JSON.parse(cleanedContent);
+      }
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      return null;
     }
   };
+
+//openai.js
+
+const formatGeneratedAnswers = (answers, questions) => {
+  return Object.entries(answers)
+    .filter(([key]) => key.startsWith('generated_'))
+    .map(([key, value]) => {
+      const question = questions.find(q => `generated_${q.id}` === key);
+      if (!question) return null;
+      const option = question.options.find(opt => opt.value === value);
+      return `${question.question}: ${option?.label || value}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+};
+
+export const generateRoadmap = async (dreamLife, answers) => {
+  try {
+    const questionsList = await generateQuestions(dreamLife);
+    const generatedAnswersText = formatGeneratedAnswers(answers, questionsList);
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: `Based on these answers "${JSON.stringify(answers)}" and this dream "${dreamLife}", create a detailed roadmap to achieve this life.
+
+Current Profile Summary:
+${Object.entries(answers)
+  .filter(([key]) => !key.startsWith('generated_'))
+  .map(([key, value]) => `${key}: ${value}`)
+  .join('\n')}
+
+Detailed Assessment:
+${generatedAnswersText}
+
+Include in the roadmap:
+1. Specific steps and timelines
+2. Financial milestones
+3. Business development strategies
+4. Family/work balance strategies
+5. Clear milestones
+6. Risk mitigation plans
+7. Required resources and skills
+8. Support systems needed`
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating roadmap:', error);
+    return null;
+  }
+};
+
+const simulateHumanTyping = async (text, onChunk) => {
+  const words = text.split(' ');
+  for (const word of words) {
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 20));
+    onChunk(word + ' ');
+  }
+};
