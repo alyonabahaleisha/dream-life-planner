@@ -83,8 +83,8 @@ export const generateDalleImage = async (dreamLife) => {
           messages: [
             {
               role: "user",
-              content: `Based on this dream life description: "${dreamLife}", create:
-              1. A vivid and inspiring story (2-3 paragraphs) about a day in this person's life, making it feel attainable yet aspirational
+              content: `Act as a professional business and life coach with 1000 of successful cases and Based on this dream life description: "${dreamLife}", create:
+              1. A vivid and inspiring reals like story (2-3 paragraphs) about a day in person's life, making it feel attainable yet aspirational
               2. A detailed schedule for their typical day, organized into morning, day, and evening sections.
               
               Format the response EXACTLY like this example:
@@ -143,7 +143,7 @@ export const generateDalleImage = async (dreamLife) => {
             },
             {
               role: "user",
-              content: `Generate 10 specific questions based on this dream life: "${dreamLife}". Focus on understanding current skills, finances, time availability, background, and timeline expectations. Return an array of questions in this exact format:
+              content: `Act as a professional business and life coach with 1000 of successful cases and generate 15 specific questions based on this dream life target: "${dreamLife}". Focus on understanding current values, skills, finances, time availability, background, and timeline expectations. Return an array of questions in this exact format:
               [
                 {
                   "id": "q1",
@@ -216,7 +216,7 @@ export const generateRoadmap = async (dreamLife, answers) => {
         messages: [
           {
             role: "user",
-            content: `Based on these answers "${JSON.stringify(answers)}" and this dream "${dreamLife}", create a detailed roadmap to achieve this life.
+            content: `Act as a professional business and life coach with 1000 of successful cases and Based on these answers "${JSON.stringify(answers)}" and this dream target "${dreamLife}", create a detailed roadmap to achieve this life.
 
 Current Profile Summary:
 ${Object.entries(answers)

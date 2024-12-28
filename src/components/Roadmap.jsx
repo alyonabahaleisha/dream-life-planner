@@ -88,7 +88,10 @@ const Roadmap = () => {
 
       try {
         const savedDreamLife = localStorage.getItem('dreamLife');
-        const roadmapContent = await generateRoadmap(savedDreamLife, location.state.answers);
+        const savedQuestionsAnswers = localStorage.getItem('questionsAnswers');
+        console.log('savedQuestionsAnswers >>>>', savedQuestionsAnswers);
+        console.log('location.state.answers >>>>', location.state.answers);
+        const roadmapContent =  await generateRoadmap(savedDreamLife, location.state.answers);
         if (roadmapContent) {
           setRoadmap(roadmapContent);
         } else {

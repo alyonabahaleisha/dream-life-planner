@@ -30,6 +30,7 @@ const LifeAssessment = () => {
             ...q,
             id: `generated_${q.id}`
           }));
+          
           setQuestions([...predefinedQuestions, ...formattedQuestions]);
         }
       } catch (error) {
@@ -46,12 +47,13 @@ const LifeAssessment = () => {
   const handleAnswer = (value) => {
     setAnswers(prev => ({
       ...prev,
-      [questions[currentQuestion].id]: value
+      [questions[currentQuestion].question]: value
     }));
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
+      localStorage.setItem('questionsAnswers', answers), 
       setIsComplete(true);
     }
   };
