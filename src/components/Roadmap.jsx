@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./ui/accordion";
 import {
   ChevronLeft,
   Target,
-  Calendar,
+  CalendarDays,
   ArrowRight,
   CheckCircle2,
   LifeBuoy,
@@ -16,14 +17,20 @@ import {
   Clock,
   Brain,
   Flag,
-  AlertCircle,
   Download,
-  Save
+  Save,
+  ListTodo,
+  CalendarRange,
+  Users,
+  Lightbulb,
+  BarChart,
+  TrendingUp
 } from 'lucide-react';
 
 import RoadmapContent from './RoadmapContent';
 import RoadmapSchedule from './RoadmapSchedule';
-import { generateRoadmap } from '../services/openai';
+import ActionPlan from './ActionPlan';
+import { generateRoadmap, generateMilestones, generate30DayPlan } from '../services/openai';
 
 const MilestoneCard = ({ title, timeframe, description, progress }) => (
   <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all">
@@ -76,85 +83,108 @@ const Roadmap = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [roadmap, setRoadmap] = useState(null);
+  const [timelineData, setTimelineData] = useState(null);
   const [completedItems, setCompletedItems] = useState({});
   const [activeSection, setActiveSection] = useState('overview');
-  
-  useEffect(() => {
-    const loadRoadmap = async () => {
-      if (!location.state?.answers) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const savedDreamLife = localStorage.getItem('dreamLife');
-        const savedQuestionsAnswers = localStorage.getItem('questionsAnswers');
-        console.log('savedQuestionsAnswers >>>>', savedQuestionsAnswers);
-        console.log('location.state.answers >>>>', location.state.answers);
-        const roadmapContent =  await generateRoadmap(savedDreamLife, location.state.answers);
-        if (roadmapContent) {
-          setRoadmap(roadmapContent);
-        } else {
-          console.error('Failed to generate roadmap');
-        }
-      } catch (error) {
-        console.error('Error generating roadmap:', error);
-      }
-      setLoading(false);
-    };
-
-    loadRoadmap();
-  }, [location.state]);
+  const [milestones, setMilestones] = useState([]);
+  const [loadingMilestones, setLoadingMilestones] = useState(true);
+  const [actionPlan, setActionPlan] = useState([]);
+  const [loadingActionPlan, setLoadingActionPlan] = useState(true);
+  const [defaultAccordionValue, setDefaultAccordionValue] = useState(['overview']);
 
   const quickLinks = [
     {
-      icon: Laptop,
-      title: "Business Development",
-      description: "Steps to establish and grow your online ventures",
-      section: 'business'
+      icon: BarChart,
+      title: "Financial Planning",
+      description: "Track and plan your financial milestones",
+      section: 'financial'
     },
     {
-      icon: Heart,
-      title: "Life Balance",
-      description: "Strategies for managing work, family, and personal growth",
-      section: 'balance'
+      icon: TrendingUp,
+      title: "Business Growth",
+      description: "Strategies for scaling your ventures",
+      section: 'business'
     },
     {
       icon: Brain,
       title: "Skill Development",
-      description: "Essential skills and learning resources",
+      description: "Essential skills and learning paths",
       section: 'skills'
     },
     {
-      icon: Flag,
-      title: "Milestones",
-      description: "Key achievements to target in your journey",
-      section: 'milestones'
+      icon: Heart,
+      title: "Life Balance",
+      description: "Balance personal and professional goals",
+      section: 'balance'
     }
   ];
 
   const actionItems = [
     {
-      id: 'research',
-      title: "Market Research",
-      description: "Identify profitable niches and analyze competition"
+      id: 'financial-baseline',
+      title: "Establish Financial Baseline",
+      description: "Document current income, expenses, and savings targets"
     },
     {
-      id: 'skills',
-      title: "Skill Assessment",
-      description: "Evaluate current skills and plan necessary improvements"
+      id: 'skills-assessment',
+      title: "Skills Assessment",
+      description: "Identify key skills needed for your dream career"
     },
     {
-      id: 'plan',
-      title: "Business Plan",
-      description: "Create detailed plan for first online business"
+      id: 'business-plan',
+      title: "Business Plan Development",
+      description: "Create detailed business plan and timeline"
     },
     {
-      id: 'schedule',
-      title: "Daily Schedule",
-      description: "Design optimal daily routine balancing all responsibilities"
+      id: 'network-building',
+      title: "Network Building",
+      description: "Connect with mentors and industry professionals"
+    },
+    {
+      id: 'daily-routine',
+      title: "Optimize Daily Routine",
+      description: "Design schedule balancing all priorities"
     }
   ];
+
+  const loadData = async () => {
+    setLoadingMilestones(true);
+    setLoadingActionPlan(true);
+    const savedDreamLife = localStorage.getItem('dreamLife');
+    
+    try {
+      // Load milestones
+      const milestoneData = await generateMilestones(savedDreamLife, location.state?.answers || {});
+      setMilestones(milestoneData);
+
+      // Generate action plan based on milestones
+      const actionPlanData = await generate30DayPlan(savedDreamLife, location.state?.answers || {}, milestoneData);
+      setActionPlan(actionPlanData);
+
+      // Load roadmap
+      const roadmapResult = await generateRoadmap(savedDreamLife, location.state?.answers || {});
+      if (roadmapResult) {
+        setRoadmap(roadmapResult.content);
+        setTimelineData(roadmapResult.timeline);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoadingMilestones(false);
+      setLoadingActionPlan(false);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!location.state?.answers) {
+      setLoading(false);
+      setLoadingMilestones(false);
+      setLoadingActionPlan(false);
+      return;
+    }
+    loadData();
+  }, [location.state]);
 
   const handleDownload = () => {
     const element = document.createElement('a');
@@ -168,6 +198,7 @@ const Roadmap = () => {
 
   const handleSaveProgress = () => {
     localStorage.setItem('completedItems', JSON.stringify(completedItems));
+    alert('Progress saved successfully!');
   };
 
   if (loading) {
@@ -196,7 +227,7 @@ const Roadmap = () => {
                 Back
               </Button>
               <h1 className="text-xl font-medium text-gray-900">
-                Achieve Your Dream Life
+                Your Dream Life Roadmap
               </h1>
             </div>
             <div className="flex items-center gap-4">
@@ -220,90 +251,152 @@ const Roadmap = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-12 space-y-12">
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-semibold text-gray-900">
             Turn Your Vision Into Reality
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Your personalized roadmap to building a successful online business empire while maintaining work-life balance
+            Your personalized roadmap to achieving your dream life goals
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickLinks.map((link, index) => (
-            <QuickLinkCard 
-              key={index} 
-              {...link} 
-              onClick={() => setActiveSection(link.section)}
-            />
-          ))}
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5" />
-              Next Steps
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {actionItems.map((item) => (
-              <ActionItem
-                key={item.id}
-                {...item}
-                isCompleted={completedItems[item.id]}
-                onToggle={() => setCompletedItems(prev => ({
-                  ...prev,
-                  [item.id]: !prev[item.id]
-                }))}
-              />
-            ))}
-          </CardContent>
-        </Card>
-
-        <RoadmapSchedule />
-        <RoadmapContent />
-
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold text-gray-900">Milestones</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <MilestoneCard
-              title="6-Month Goals"
-              timeframe="Short Term"
-              description="Launch first online business and establish consistent routines"
-              progress={15}
-            />
-            <MilestoneCard
-              title="1-Year Goals"
-              timeframe="Medium Term"
-              description="Scale first business and launch second venture"
-              progress={5}
-            />
-            <MilestoneCard
-              title="3-5 Year Vision"
-              timeframe="Long Term"
-              description="Build multiple income streams and achieve location independence"
-              progress={0}
-            />
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Your Detailed Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose max-w-none">
-              <div className="whitespace-pre-wrap text-gray-600">
-                {roadmap}
+        <Accordion 
+          type="multiple" 
+          defaultValue={defaultAccordionValue}
+          className="w-full space-y-4"
+        >
+          {/* Overview Section */}
+          <AccordionItem value="overview" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                <span>Your Dream Life Overview</span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </AccordionTrigger>
+            <AccordionContent className="px-6">
+              <div className="prose max-w-none">
+                <div className="whitespace-pre-wrap text-gray-600">
+                  {roadmap}
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Milestones Section */}
+          <AccordionItem value="milestones" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6">
+              <div className="flex items-center gap-2">
+                <Flag className="w-5 h-5" />
+                <span>Key Milestones</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {loadingMilestones ? (
+                  Array(4).fill(0).map((_, i) => (
+                    <div key={i} className="bg-gray-100 rounded-xl p-6 animate-pulse h-48" />
+                  ))
+                ) : (
+                  milestones.map((milestone, index) => (
+                    <MilestoneCard
+                      key={index}
+                      title={milestone.title}
+                      timeframe={milestone.timeframe}
+                      description={milestone.description}
+                      progress={milestone.progress}
+                    />
+                  ))
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 30-Day Action Plan */}
+          <AccordionItem value="action-plan" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6">
+              <div className="flex items-center gap-2">
+                <ListTodo className="w-5 h-5" />
+                <span>30-Day Action Plan</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6">
+              {loadingActionPlan ? (
+                <div className="space-y-4">
+                  {Array(4).fill(0).map((_, i) => (
+                    <div key={i} className="bg-gray-100 rounded-xl p-6 animate-pulse h-48" />
+                  ))}
+                </div>
+              ) : (
+                <ActionPlan plan={actionPlan} />
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Timeline Section */}
+          <AccordionItem value="timeline" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6">
+              <div className="flex items-center gap-2">
+                <CalendarRange className="w-5 h-5" />
+                <span>Timeline View</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6">
+              <RoadmapSchedule timelineData={timelineData} />
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Resources Section */}
+          <AccordionItem value="resources" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-5 h-5" />
+                <span>Quick Links & Resources</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {quickLinks.map((link, index) => (
+                  <QuickLinkCard
+                    key={index}
+                    icon={link.icon}
+                    title={link.title}
+                    description={link.description}
+                    onClick={() => setActiveSection(link.section)}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Action Items */}
+          <AccordionItem value="action-items" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Track Progress</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6">
+              <div className="space-y-4">
+                {actionItems.map((item) => (
+                  <ActionItem
+                    key={item.id} key={item.id}
+                    title={item.title}
+                    description={item.description}
+                    isCompleted={completedItems[item.id] || false}
+                    onToggle={() => {
+                      setCompletedItems(prev => ({
+                        ...prev,
+                        [item.id]: !prev[item.id]
+                      }));
+                    }}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <div className="flex justify-center pt-8">
           <Button 

@@ -33,74 +33,45 @@ const ProcessRow = ({ process, years, icon: Icon, color }) => (
   </div>
 );
 
-const RoadmapSchedule = () => {
-  const processes = [
+const iconMap = {
+  "Financial Planning": DollarSign,
+  "Business Growth": TrendingUp,
+  "Skill Development": Users,
+  "Life Goals": Clock,
+  "Future Vision": Lightbulb
+};
+
+const RoadmapSchedule = ({ timelineData = [] }) => {
+  // Use default data if no timeline data is provided
+  const defaultProcesses = [
     {
       name: "Financial Planning",
-      icon: DollarSign,
       color: "bg-cyan-600",
-      years: [
-        { title: "Build Emergency Fund", description: "Save 6 months expenses" },
-        { title: "Investment Strategy", description: "Plan business funding" },
-        { title: "Revenue Goals", description: "Set financial milestones" },
-        null,
-        null,
-        null
-      ]
+      years: Array(6).fill(null)
     },
     {
       name: "Business Growth",
-      icon: TrendingUp,
       color: "bg-indigo-600",
-      years: [
-        { title: "Market Research" },
-        { title: "First Business Launch" },
-        { title: "Scale Operations" },
-        { title: "Multiple Ventures" },
-        null,
-        null
-      ]
+      years: Array(6).fill(null)
     },
     {
       name: "Skill Development",
-      icon: Users,
       color: "bg-blue-500",
-      years: [
-        null,
-        { title: "Core Business Skills", description: "Marketing & Management" },
-        { title: "Advanced Training", description: "Leadership & Strategy" },
-        { title: "Mastery Phase", description: "Industry Expertise" },
-        null,
-        null
-      ]
+      years: Array(6).fill(null)
     },
     {
       name: "Life Goals",
-      icon: Clock,
       color: "bg-emerald-600",
-      years: [
-        null,
-        { title: "Work-Life Balance" },
-        { title: "Family Planning" },
-        { title: "Dream Home", description: "Property Purchase" },
-        { title: "Family Life", description: "Quality Time & Growth" },
-        null
-      ]
+      years: Array(6).fill(null)
     },
     {
       name: "Future Vision",
-      icon: Lightbulb,
       color: "bg-green-600",
-      years: [
-        null,
-        null,
-        null,
-        null,
-        { title: "Legacy Planning", description: "Long-term Wealth" },
-        { title: "New Ventures", description: "Expansion & Innovation" }
-      ]
+      years: Array(6).fill(null)
     }
   ];
+
+  const processes = timelineData.length > 0 ? timelineData : defaultProcesses;
 
   return (
     <Card className="w-full">
@@ -126,7 +97,7 @@ const RoadmapSchedule = () => {
                   key={index}
                   process={process.name}
                   years={process.years}
-                  icon={process.icon}
+                  icon={iconMap[process.name]}
                   color={process.color}
                 />
               ))}
