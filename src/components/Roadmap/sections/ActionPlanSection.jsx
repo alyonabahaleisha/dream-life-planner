@@ -1,4 +1,3 @@
-// components/Roadmap/sections/ActionPlanSection.jsx
 import React from 'react';
 import ActionPlan from '../ActionPlan';
 
