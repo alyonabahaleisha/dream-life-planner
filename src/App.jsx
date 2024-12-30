@@ -5,7 +5,7 @@ import DreamInput from './components/DreamInput/DreamInput';
 import StoryResponse from './components/DreamInput/StoryResponse';
 import AuthButtons from './components/AuthButtons';
 import { Button } from './components/ui/button';
-import { generateStory, generateDalleImage, generateStabilityImage } from './services/openai';
+import { generateStory, generateDalleImage} from './services/openai';
 import { auth } from './config/firebase';
 import dreamBg from './assets/dream-bg.png';
 
@@ -135,9 +135,9 @@ function App() {
     setImage(null);
     setShowResponse(true);
     localStorage.setItem('dreamLife', dreamLife);
-    
+
     try {
-      const generateImage = imageModel === 'dalle' ? generateDalleImage : generateStabilityImage;
+      const generateImage = generateDalleImage;
       generateImage(dreamLife).then(imageData => {
         if (imageData) {
           setImage(imageData);

@@ -88,43 +88,6 @@ export const generateDalleImage = async (dreamLife) => {
   }
 };
 
-// Image generation with Stability AI
-export const generateStabilityImage = async (dreamLife) => {
-  try {
-    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_STABILITY_API_KEY}`
-      },
-      body: JSON.stringify({
-        text_prompts: [
-          {
-            text: `Professional cinematic photograph of ${dreamLife}. 
-            Photorealistic, luxury lifestyle, shallow depth of field, rich colors, 
-            high-end magazine quality, editorial photography style, wide cinematic shot.`,
-            weight: 1
-          }
-        ],
-        cfg_scale: 7,
-        height: 320,
-        width: 704,
-        samples: 1,
-        steps: 50
-      })
-    });
-
-    const data = await response.json();
-    return {
-      url: `data:image/png;base64,${data.artifacts[0].base64}`,
-      type: 'stability'
-    };
-  } catch (error) {
-    console.error('Error generating Stability image:', error);
-    return null;
-  }
-};
-
 // Assessment questions generation
 export const generateQuestions = async (dreamLife) => {
   try {
@@ -143,7 +106,7 @@ export const generateQuestions = async (dreamLife) => {
           },
           {
             role: "user",
-            content: `Act as a professional business and life coach with 1000 of successful cases and generate 15 specific questions based on this dream life target: "${dreamLife}". Focus on understanding current values, skills, finances, time availability, background, and timeline expectations. Return an array of questions in this exact format:
+            content: `Act as a professional business and life coach with 1000 of successful cases and generate 15 specific questions based on this dream life target: "${dreamLife}". Focus on understanding current values, skills, finances, time availability, background, and timeline expectations, career, health, relationsip, family, personal growth, lifestyle. Return an array of questions in this exact format:
             [
               {
                 "id": "q1",
@@ -350,68 +313,38 @@ export const generateRoadmap = async (dreamLife, answers) => {
         messages: [
           {
             role: "system",
-            content: "You are a professional life and business coach with expertise in creating detailed, actionable roadmaps. Structure your responses clearly with specific objectives and actions for each time period."
+            content: "You are a professional life and business coach with unique ability lies in identifying non-obvious solutions and delivering breakthrough results and expertise in creating detailed, actionable roadmaps including areas of career, business, health, relationsip, family, personal growth, lifestyle. Structure your responses clearly with specific objectives and actions for each time period."
           },
           {
             role: "user",
-            content: `Based on these answers "${JSON.stringify(answers)}" and this dream target "${dreamLife}", create a detailed 6-year roadmap organized into five parallel tracks.
+            content: `Using the provided inputs, simulate the approach a team of top-tier industry experts would take to create a realistic, actionable 6-year roadmap for achieving this dream life. Ensure insights are practical, result-oriented, and align with the user's unique profile.
 
-Current Profile Summary:
-${Object.entries(answers)
-  .filter(([key]) => !key.startsWith('generated_'))
-  .map(([key, value]) => `${key}: ${value}`)
-  .join('\n')}
+Inputs:
+Answers: ${JSON.stringify(answers)}
+Dream Target: ${dreamLife}
+User Profile Summary:
+${Object.entries(answers).filter(([key]) => !key.startsWith('generated_')).map(([key, value]) => '${key}:${value}').join('\n')}
 
-Detailed Assessment:
-${generatedAnswersText}
+Assessment Overview: ${generatedAnswersText}
 
-Structure the response in two parts:
-
-PART 1: TIMELINE TRACKS
-Provide specific milestones and actions for each track across 6 years (2024-2029). Format exactly as follows:
-
+Output Expectations:
+Part 1: Strategic Timeline
+Develop milestones for 5 tracks: Financial Planning, Business Growth, Skill Development, Life Goals, and Family Vision. Milestones must reflect realistic annual goals and build sequentially.
+Example:
 [TRACK: FINANCIAL PLANNING]
-2024: Build Emergency Fund | Establish financial baseline and savings habits
-2025: Investment Strategy | Develop diversified investment portfolio
-2026: Revenue Goals | Set and achieve major financial milestones
-...
+2024: Build Emergency Fund | Establish savings habits
+2025: Investment Strategy | Build diversified portfolio
 
-[TRACK: BUSINESS GROWTH]
-2024: Market Research | Identify profitable business opportunities
-2025: First Business Launch | Establish and grow initial venture
-2026: Scale Operations | Expand business reach and revenue
-...
+Part 2: Expert-Designed Detailed Roadmap
+Divide into 3-4 actionable phases, each spanning specific months. Include clear objectives and detailed steps for measurable progress.
+Example:
 
-[TRACK: SKILL DEVELOPMENT]
-2024: Core Skills | Master fundamental business and technical skills
-2025: Advanced Training | Develop leadership and management expertise
-2026: Specialization | Focus on industry-specific knowledge
-...
-
-[TRACK: LIFE GOALS]
-2024: Foundation | Establish healthy work-life balance
-2025: Family Planning | Create stable personal life structure
-2026: Achievement | Reach key personal milestones
-...
-
-[TRACK: FUTURE VISION]
-2024: Planning | Set long-term wealth building strategy
-2025: Implementation | Execute on future security plans
-2026: Expansion | Develop legacy and growth opportunities
-...
-
-PART 2: DETAILED ROADMAP
-Then provide a detailed breakdown in phases:
-
-Phase One: Foundation (Months 1-6)
-Month 1-2:
-Objective: [Clear objective here]
+Phase One (Months 1-6): Foundation
+Objective: Build foundational systems for progress.
 Actions:
-• [Specific action step]
-• [Specific action step]
-• [Specific action step]
-
-Include 3-4 phases total, each broken down into specific months with clear objectives and actions.`
+• Develop budget and savings plan.
+• Enroll in key skill development courses.
+• Conduct initial market research for business ideas.`
           }
         ]
       })
@@ -567,5 +500,110 @@ export const generate30DayPlan = async (dreamLife, answers, milestones) => {
   } catch (error) {
     console.error('Error generating action plan:', error);
     return [];
+  }
+};
+
+// services/openai.js (add this function)
+// services/openai.js
+
+export const generateValuesTransition = async (dreamLife, answers) => {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4-0125-preview",
+        messages: [
+          {
+            role: "system",
+            content: "You are an AI life coach specializing in values analysis and personal development. Respond only with valid JSON containing the requested values analysis."
+          },
+          {
+            role: "user",
+            content: `Analyze this dream life description: "${dreamLife}" and assessment answers: ${JSON.stringify(answers)}.
+            
+            Return only a JSON object with this exact structure:
+            {
+              "currentValues": [
+                {
+                  "title": "string",
+                  "description": "string"
+                }
+              ],
+              "desiredValues": [
+                {
+                  "title": "string",
+                  "description": "string"
+                }
+              ],
+              "strategies": [
+                {
+                  "from": "string",
+                  "to": "string",
+                  "strategies": ["string"]
+                }
+              ]
+            }
+            
+            Include 3-5 values in each category and 3-4 transition strategies.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+        response_format: { "type": "json_object" }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid API response structure');
+    }
+
+    const content = data.choices[0].message.content;
+    
+    try {
+      // First attempt: direct parse
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.warn('First parse attempt failed:', parseError);
+      
+      try {
+        // Second attempt: clean up potential markdown
+        const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+        return JSON.parse(cleanContent);
+      } catch (secondError) {
+        console.error('JSON parsing failed:', secondError);
+        // Return a default structure to prevent UI breaks
+        return {
+          currentValues: [
+            {
+              title: "Loading Error",
+              description: "Unable to load values analysis. Please try again."
+            }
+          ],
+          desiredValues: [],
+          strategies: []
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error generating values transition:', error);
+    return {
+      currentValues: [
+        {
+          title: "Error",
+          description: "Failed to generate values analysis. Please try again."
+        }
+      ],
+      desiredValues: [],
+      strategies: []
+    };
   }
 };
