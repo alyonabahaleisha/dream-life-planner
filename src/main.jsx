@@ -7,6 +7,7 @@ import App from './App.jsx'
 import Layout from './components/Layout'
 import LifeAssessment from './components/Assessment/LifeAssessment'
 import Roadmap from './components/Roadmap'
+import { FeatureFlagProvider } from './contexts/FeatureFlagContext'
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <FeatureFlagProvider>
+      <RouterProvider router={router} />
+    </FeatureFlagProvider>
   </StrictMode>
 );

@@ -1,8 +1,9 @@
+// App.jsx
 import React, { useState, useRef } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import DreamInput from './components/DreamInput/DreamInput';
 import StoryResponse from './components/DreamInput/StoryResponse';
-import { generateStory, generateDalleImage } from './services/openai';
+import { generateStory, generateDalleImage } from './services/api';
 import dreamBg from './assets/dream-bg.png';
 
 function App() {
@@ -63,7 +64,6 @@ function App() {
         </Helmet>
         
         <div className="min-h-screen flex items-center justify-center">
-          
           <div className="relative z-10 w-full p-4">
             {!showResponse ? (
               <DreamInput

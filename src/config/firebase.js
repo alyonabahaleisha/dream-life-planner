@@ -2,22 +2,27 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getAnalytics } from "firebase/analytics";
+import { getRemoteConfig } from 'firebase/remote-config';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCk0FADIRPQBhhAly0wMwhi2kil2gOL0S0",
-  authDomain: "dream-planner-d6ea3.firebaseapp.com",
-  projectId: "dream-planner-d6ea3",
-  storageBucket: "dream-planner-d6ea3.firebasestorage.app",
-  messagingSenderId: "289915384483",
-  appId: "1:289915384483:web:48f2e11b8f5c92e1f18516",
-  measurementId: "G-W8L2GFQ3HE"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Auth with persistence
+// Initialize services
 const auth = getAuth(app);
+const analytics = getAnalytics(app);
+const remoteConfig = getRemoteConfig(app);
+
+// Set auth persistence
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
     console.log('Firebase persistence set to local');
@@ -26,7 +31,4 @@ setPersistence(auth, browserLocalPersistence)
     console.error('Error setting persistence:', error);
   });
 
-const analytics = getAnalytics(app);
-
-export { auth, analytics };
-export default app;
+export { app, auth, analytics, remoteConfig };

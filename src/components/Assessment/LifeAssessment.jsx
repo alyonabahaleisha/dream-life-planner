@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '../ui/progress';
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { predefinedQuestions } from './questions';
-import { generateQuestions } from '../../services/openai';
+import { generateQuestions } from '../../services/api';  // Updated import
 
 const LifeAssessment = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -26,15 +26,23 @@ const LifeAssessment = () => {
       try {
         const generatedQuestions = await generateQuestions(dreamLife);
         if (generatedQuestions) {
-          const formattedQuestions = generatedQuestions.map(q => ({
+          // Ensure the response matches expected format
+          const formattedQuestions = Array.isArray(generatedQuestions) 
+            ? generatedQuestions
+            : generatedQuestions.questions || [];
+
+          // Map and format the questions
+          const processedQuestions = formattedQuestions.map(q => ({
             ...q,
             id: `generated_${q.id}`
           }));
           
-          setQuestions([...predefinedQuestions, ...formattedQuestions]);
+          setQuestions([...predefinedQuestions, ...processedQuestions]);
         }
       } catch (error) {
         console.error('Error loading questions:', error);
+        // Fallback to predefined questions on error
+        setQuestions(predefinedQuestions);
       }
       setLoading(false);
     };
@@ -47,13 +55,15 @@ const LifeAssessment = () => {
   const handleAnswer = (value) => {
     setAnswers(prev => ({
       ...prev,
-      [questions[currentQuestion].question]: value
+      [questions[currentQuestion].id]: value, // Updated to use question ID
+      [questions[currentQuestion].question]: value // Keep for backward compatibility
     }));
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
-      localStorage.setItem('questionsAnswers', answers), 
+      // Store answers in localStorage
+      localStorage.setItem('questionsAnswers', JSON.stringify(answers));
       setIsComplete(true);
     }
   };

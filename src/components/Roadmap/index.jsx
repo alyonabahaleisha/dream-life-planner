@@ -11,7 +11,7 @@ import {
   generateMilestones, 
   generate30DayPlan,
   generateValuesTransition 
-} from '../../services/openai';
+} from '../../services/api';  // Updated import
 
 const Roadmap = () => {
   const navigate = useNavigate();
@@ -25,111 +25,130 @@ const Roadmap = () => {
   });
   const [roadmap, setRoadmap] = useState(null);
   const [timelineData, setTimelineData] = useState(null);
-  const [completedItems, setCompletedItems] = useState({});
+  const [completedItems, setCompletedItems] = useState(() => {
+    const saved = localStorage.getItem('completedItems');
+    return saved ? JSON.parse(saved) : {};
+  });
   const [activeSection, setActiveSection] = useState('overview');
   const [milestones, setMilestones] = useState([]);
   const [actionPlan, setActionPlan] = useState([]);
   const [values, setValues] = useState(null);
   const [defaultAccordionValue, setDefaultAccordionValue] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!location.state?.answers) {
-      setLoadingStates({
-        roadmap: false,
-        milestones: false,
-        actionPlan: false,
-        timeline: false,
-        values: false
-      });
-      return;
-    }
+    const initializeRoadmap = async () => {
+      if (!location.state?.answers) {
+        setLoadingStates({
+          roadmap: false,
+          milestones: false,
+          actionPlan: false,
+          timeline: false,
+          values: false
+        });
+        return;
+      }
 
-    const savedDreamLife = localStorage.getItem('dreamLife');
-    const answers = location.state?.answers || {};
+      const savedDreamLife = localStorage.getItem('dreamLife');
+      const answers = location.state?.answers || {};
 
-    // Load milestones first
-    generateMilestones(savedDreamLife, answers)
-      .then(milestoneData => {
+      try {
+        // Generate milestones and action plan sequentially
+        const milestoneData = await generateMilestones(savedDreamLife, answers);
         setMilestones(milestoneData);
         setLoadingStates(prev => ({ ...prev, milestones: false }));
 
-        // Once milestones are loaded, generate action plan
-        return generate30DayPlan(savedDreamLife, answers, milestoneData);
-      })
-      .then(actionPlanData => {
+        const actionPlanData = await generate30DayPlan(savedDreamLife, answers, milestoneData);
         setActionPlan(actionPlanData);
         setLoadingStates(prev => ({ ...prev, actionPlan: false }));
-      })
-      .catch(error => {
-        console.error('Error loading milestones or action plan:', error);
-        setLoadingStates(prev => ({
-          ...prev,
-          milestones: false,
-          actionPlan: false
-        }));
-      });
 
-    // Load roadmap independently
-    generateRoadmap(savedDreamLife, answers)
-      .then(result => {
-        if (result) {
-          setRoadmap(result.content);
-          setTimelineData(result.timeline);
+        // Generate roadmap and values transition in parallel
+        const [roadmapResult, valuesData] = await Promise.all([
+          generateRoadmap(savedDreamLife, answers),
+          generateValuesTransition(savedDreamLife, answers)
+        ]);
+
+        if (roadmapResult) {
+          setRoadmap(roadmapResult.content);
+          setTimelineData(roadmapResult.timeline);
         }
-        setLoadingStates(prev => ({
-          ...prev,
-          roadmap: false,
-          timeline: false
-        }));
-      })
-      .catch(error => {
-        console.error('Error loading roadmap:', error);
-        setLoadingStates(prev => ({
-          ...prev,
-          roadmap: false,
-          timeline: false
-        }));
-      });
-
-    // Load values transition independently
-    generateValuesTransition(savedDreamLife, answers)
-      .then(valuesData => {
         setValues(valuesData);
+
         setLoadingStates(prev => ({
           ...prev,
+          roadmap: false,
+          timeline: false,
           values: false
         }));
-      })
-      .catch(error => {
-        console.error('Error loading values transition:', error);
-        setLoadingStates(prev => ({
-          ...prev,
+      } catch (error) {
+        console.error('Error initializing roadmap:', error);
+        setError('Failed to generate roadmap content. Please try again.');
+        setLoadingStates({
+          roadmap: false,
+          milestones: false,
+          actionPlan: false,
+          timeline: false,
           values: false
-        }));
-      });
+        });
+      }
+    };
+
+    initializeRoadmap();
   }, [location.state]);
 
   const handleDownload = () => {
-    const element = document.createElement('a');
-    const file = new Blob([roadmap], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = 'my-dream-life-roadmap.txt';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    try {
+      const element = document.createElement('a');
+      const file = new Blob([roadmap], {type: 'text/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = 'my-dream-life-roadmap.txt';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    } catch (error) {
+      console.error('Error downloading roadmap:', error);
+      alert('Failed to download roadmap. Please try again.');
+    }
   };
 
   const handleSaveProgress = () => {
-    localStorage.setItem('completedItems', JSON.stringify(completedItems));
-    alert('Progress saved successfully!');
+    try {
+      localStorage.setItem('completedItems', JSON.stringify(completedItems));
+      alert('Progress saved successfully!');
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      alert('Failed to save progress. Please try again.');
+    }
   };
 
   const handleToggleItem = (itemId) => {
-    setCompletedItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }));
+    setCompletedItems(prev => {
+      const updated = {
+        ...prev,
+        [itemId]: !prev[itemId]
+      };
+      // Save to localStorage whenever items are toggled
+      localStorage.setItem('completedItems', JSON.stringify(updated));
+      return updated;
+    });
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center space-y-4 p-8">
+          <h2 className="text-2xl font-semibold text-gray-900">Oops! Something went wrong</h2>
+          <p className="text-gray-600">{error}</p>
+          <Button 
+            onClick={() => navigate(-1)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
