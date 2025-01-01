@@ -1,8 +1,10 @@
+// src/components/Layout.jsx
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import { useAuth } from '../hooks/useAuth';
 import dreamBg from '../assets/dream-bg.png';
+import DevToolbar from './development/DevToolbar';
 
 const Layout = () => {
   const { user, signOut, handleAuthSuccess } = useAuth();
@@ -14,7 +16,6 @@ const Layout = () => {
         style={{ backgroundImage: `url(${dreamBg})` }}
       />
       
-      {/* Header with background blur */}
       <div className="sticky top-0 z-50">
         <Header 
           user={user} 
@@ -23,10 +24,11 @@ const Layout = () => {
         />
       </div>
 
-      {/* Main content */}
       <main className="relative z-10">
         <Outlet />
       </main>
+
+      {process.env.NODE_ENV === 'development' && <DevToolbar />}
     </div>
   );
 };
