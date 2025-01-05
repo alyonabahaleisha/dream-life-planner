@@ -23,7 +23,6 @@ class APIError extends Error {
 
 async function makeAPICall(endpoint, data) {
   try {
-   console.log('make api call')
     if (shouldUseMocks()) {
       console.log(`Using mock data for ${endpoint}`);
       return getMockResponse(endpoint, data);
@@ -33,7 +32,7 @@ async function makeAPICall(endpoint, data) {
       throw new Error('API URL is not configured. Please check your environment variables.');
     }
    
-    const response = await fetch(`${API_URL}/${endpoint}`, {
+    const response = await fetch(`${API_URL}/openai/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
