@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { 
@@ -6,7 +5,6 @@ import {
   CheckCircle2, 
   Link, 
   Target,
-  Tag
 } from 'lucide-react';
 
 const PriorityBadge = ({ priority }) => {

@@ -1,14 +1,7 @@
+// src/components/AuthComponents.jsx
 import React, { useState } from 'react';
 import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import AuthModal from './AuthModal';
 import { auth } from '../config/firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -26,9 +19,8 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const AuthButtons = ({ onAuthSuccess }) => {
-  const [isSignInOpen, setIsSignInOpen] = useState(false);
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+// Shared authentication logic component
+const useAuth = (onAuthSuccess) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,7 +28,6 @@ const AuthButtons = ({ onAuthSuccess }) => {
 
   const handleGoogleAuth = async () => {
     try {
-      console.log('Starting Google auth...');
       setError('');
       setIsLoading(true);
       
@@ -45,13 +36,9 @@ const AuthButtons = ({ onAuthSuccess }) => {
         prompt: 'select_account'
       });
 
-      console.log('Initiating Google sign in...');
       const result = await signInWithPopup(auth, provider);
-      
-      console.log('Google auth successful:', result.user.email);
       onAuthSuccess(result.user);
-      setIsSignInOpen(false);
-      setIsSignUpOpen(false);
+      return true;
       
     } catch (error) {
       console.error('Google auth error:', error);
@@ -60,6 +47,7 @@ const AuthButtons = ({ onAuthSuccess }) => {
         error.code === 'auth/popup-blocked' ? 'Please allow popups for this website' :
         'Failed to sign in with Google. Please try again.'
       );
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +56,7 @@ const AuthButtons = ({ onAuthSuccess }) => {
   const handleEmailAuth = async (isSignIn) => {
     if (!email || !password) {
       setError('Please fill in all fields');
-      return;
+      return false;
     }
 
     try {
@@ -83,10 +71,9 @@ const AuthButtons = ({ onAuthSuccess }) => {
       }
 
       onAuthSuccess(userCredential.user);
-      setIsSignInOpen(false);
-      setIsSignUpOpen(false);
       setEmail('');
       setPassword('');
+      return true;
     } catch (error) {
       console.error('Email auth error:', error);
       setError(
@@ -97,122 +84,28 @@ const AuthButtons = ({ onAuthSuccess }) => {
         error.code === 'auth/wrong-password' ? 'Incorrect password' :
         'Failed to authenticate. Please try again.'
       );
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyDown = (e, isSignIn) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleEmailAuth(isSignIn);
-    }
+  return {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    error,
+    isLoading,
+    handleGoogleAuth,
+    handleEmailAuth
   };
+};
 
-  const AuthModal = ({ isOpen, setIsOpen, isSignIn }) => (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{isSignIn ? 'Sign In' : 'Sign Up'}</DialogTitle>
-          <DialogDescription>
-            {isSignIn ? 'Sign in to your account' : 'Create a new account'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <Button 
-            variant="outline" 
-            onClick={handleGoogleAuth}
-            className="w-full flex items-center justify-center gap-2"
-            disabled={isLoading}
-          >
-            <GoogleIcon />
-            Continue with Google
-          </Button>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, isSignIn)}
-              disabled={isLoading}
-              className="bg-white"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, isSignIn)}
-              disabled={isLoading}
-              className="bg-white"
-            />
-          </div>
-
-          {error && (
-            <div className="text-sm text-red-500">
-              {error}
-            </div>
-          )}
-
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            onClick={() => handleEmailAuth(isSignIn)}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : (isSignIn ? 'Sign In' : 'Sign Up')}
-          </Button>
-
-          <div className="text-center text-sm text-gray-500">
-            {isSignIn ? (
-              <>
-                Don't have an account?{' '}
-                <button
-                  onClick={() => {
-                    setIsSignInOpen(false);
-                    setIsSignUpOpen(true);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button
-                  onClick={() => {
-                    setIsSignUpOpen(false);
-                    setIsSignInOpen(true);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+// AuthButtons Component
+const AuthButtons = ({ onAuthSuccess }) => {
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
 
   return (
     <div className="flex items-center gap-1">
@@ -237,11 +130,13 @@ const AuthButtons = ({ onAuthSuccess }) => {
         isOpen={isSignInOpen} 
         setIsOpen={setIsSignInOpen} 
         isSignIn={true}
+        onAuthSuccess={onAuthSuccess}
       />
       <AuthModal 
         isOpen={isSignUpOpen} 
         setIsOpen={setIsSignUpOpen} 
         isSignIn={false}
+        onAuthSuccess={onAuthSuccess}
       />
     </div>
   );

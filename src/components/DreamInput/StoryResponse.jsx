@@ -1,7 +1,18 @@
+// src/components/StoryResponse.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "../ui/button";
-import { X, Clock, ChevronRight, Sun, Sunrise, Sunset } from 'lucide-react';
+import { 
+  X, 
+  Clock, 
+  ChevronRight, 
+  Sun, 
+  Sunrise, 
+  Sunset,
+  Sparkles,
+  ArrowRight
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AuthModal from '../AuthModal'; 
 
 const TimelineItem = ({ time, activity, isLast }) => (
   <div className="flex gap-4">
@@ -40,9 +51,10 @@ const TimelineSection = ({ title, items, icon: Icon }) => (
   </div>
 );
 
-const StoryResponse = ({ story, image, isLoading, onReset }) => {
+const StoryResponse = ({ story, image, isLoading, onReset, onAuthSuccess }) => {
   const [showSchedule, setShowSchedule] = useState(false);
   const [isStoryComplete, setIsStoryComplete] = useState(false);
+  const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const storyRef = useRef(null);
   const navigate = useNavigate();
 
@@ -67,15 +79,14 @@ const StoryResponse = ({ story, image, isLoading, onReset }) => {
     const storyPart = parts[0].replace('[STORY]', '').trim();
     const schedulePart = parts[1].trim();
 
-    const lines = schedulePart.split('\n');
-    let currentSection = null;
     const sections = {
       morning: [],
       day: [],
       evening: []
     };
 
-    lines.forEach(line => {
+    let currentSection = null;
+    schedulePart.split('\n').forEach(line => {
       const trimmedLine = line.trim();
 
       if (trimmedLine === '[MORNING]') currentSection = 'morning';
@@ -101,6 +112,13 @@ const StoryResponse = ({ story, image, isLoading, onReset }) => {
     return { story: storyPart, schedule: sections };
   };
 
+  const handleAuthSuccess = (user) => {
+    if (onAuthSuccess) {
+      onAuthSuccess(user);
+    }
+    navigate('/assessment');
+  };
+
   const { story: storyText, schedule } = formatContent(story);
   
   useEffect(() => {
@@ -122,6 +140,7 @@ const StoryResponse = ({ story, image, isLoading, onReset }) => {
         </Button>
         
         <div className="space-y-6">
+          {/* Image Section */}
           <div className="rounded-xl overflow-hidden shadow-lg">
             {image ? (
               <div className="relative">
@@ -135,48 +154,52 @@ const StoryResponse = ({ story, image, isLoading, onReset }) => {
               <div className="w-[704px] h-[320px] bg-gray-100 flex items-center justify-center">
                 <div className="text-gray-500 flex flex-col items-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800 mb-2" />
-                  <span>Generating your dream lifestyle ...</span>
+                  <span>Generating your dream lifestyle...</span>
                 </div>
               </div>
             )}
           </div>
 
-          <h2 className="text-2xl font-normal text-gray-800">
-            A Day in Your Dream Life
-          </h2>
-          
-          <div className="prose prose-lg max-w-none">
-            {isLoading && !story ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800" />
-              </div>
-            ) : (
-              <div ref={storyRef} className="whitespace-pre-wrap text-gray-700">
-                {storyText}
-                {isLoading && (
-                  <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1" />
-                )}
-              </div>
-            )}
+          {/* Story Section */}
+          <div>
+            <h2 className="text-2xl font-normal text-gray-800 mb-4">
+              A Day in Your Dream Life
+            </h2>
+            
+            <div className="prose prose-lg max-w-none">
+              {isLoading && !story ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800" />
+                </div>
+              ) : (
+                <div ref={storyRef} className="whitespace-pre-wrap text-gray-700">
+                  {storyText}
+                  {isLoading && (
+                    <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1" />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Schedule Section */}
           {story && (
             <>
               {(isStoryComplete && isLoading) ? (
                 <div className="mt-8 flex justify-center">
                   <div className="text-gray-500 flex flex-col items-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800 mb-2" />
-                    <span>Generating your schedule...</span>
+                    <span>Creating your personalized schedule...</span>
                   </div>
                 </div>
               ) : !showSchedule && isStoryComplete && !isLoading && (
                 <div className="mt-8 flex justify-center">
                   <Button
                     onClick={() => setShowSchedule(true)}
-                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center gap-2"
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center gap-2 h-11"
                   >
                     <Clock className="h-4 w-4" />
-                    See your schedule
+                    View Your Daily Schedule
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -187,26 +210,26 @@ const StoryResponse = ({ story, image, isLoading, onReset }) => {
           {showSchedule && story && (
             <div className="mt-8 space-y-8">
               <h3 className="text-xl font-medium text-gray-800 mb-6">
-                Your Daily Schedule
+                Your Dream Life Schedule
               </h3>
               <div className="pl-4 space-y-12">
                 {schedule.morning?.length > 0 && (
                   <TimelineSection 
-                    title="Morning" 
+                    title="Morning Routine" 
                     items={schedule.morning}
                     icon={Sunrise}
                   />
                 )}
                 {schedule.day?.length > 0 && (
                   <TimelineSection 
-                    title="Day" 
+                    title="Daytime Activities" 
                     items={schedule.day}
                     icon={Sun}
                   />
                 )}
                 {schedule.evening?.length > 0 && (
                   <TimelineSection 
-                    title="Evening" 
+                    title="Evening Relaxation" 
                     items={schedule.evening}
                     icon={Sunset}
                   />
@@ -214,25 +237,38 @@ const StoryResponse = ({ story, image, isLoading, onReset }) => {
               </div>
             </div>
           )}
+
+          {/* Action Buttons */}
+          {showSchedule && (
+            <div className="mt-12 flex justify-between items-center">
+              <Button
+                onClick={onReset}
+                variant="outline"
+                className="text-gray-600 gap-2"
+              >
+                <ArrowRight className="w-4 h-4 rotate-180" />
+                Create Another Dream
+              </Button>
+
+              <Button
+                onClick={() => setIsSignUpOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-11 text-base px-6"
+              >
+                <Sparkles className="w-4 h-4" />
+                Make It Reality
+              </Button>
+            </div>
+          )}
         </div>
-        
-        {showSchedule && (
-          <div className="mt-8 flex justify-end gap-3">
-            <Button
-              onClick={() => navigate('/assessment')}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              I want to make it my reality
-            </Button>
-            <Button
-              onClick={onReset}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700"
-            >
-              Create Another Dream
-            </Button>
-          </div>
-        )}
       </div>
+
+      {/* Authentication Modal */}
+      <AuthModal 
+        isOpen={isSignUpOpen}
+        setIsOpen={setIsSignUpOpen}
+        isSignIn={false}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 };

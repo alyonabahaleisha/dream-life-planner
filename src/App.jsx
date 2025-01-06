@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import DreamInput from './components/DreamInput/DreamInput';
 import StoryResponse from './components/DreamInput/StoryResponse';
@@ -8,7 +8,6 @@ import { generateStory, generateDalleImage } from './services/api';
 import { dreamTrackingService } from './services/dreamTracking';
 import { Alert, AlertTitle, AlertDescription } from './components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import dreamBg from './assets/dream-bg.png';
 
 function App() {
   const [dreamLife, setDreamLife] = useState('');

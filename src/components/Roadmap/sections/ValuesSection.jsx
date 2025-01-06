@@ -1,7 +1,7 @@
 // components/Roadmap/sections/ValuesSection.jsx
 import React from 'react';
 import { Card, CardContent } from '../../ui/card';
-import { ArrowRight, Heart } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const ValueCard = ({ title, description }) => (
   <Card className="bg-white transition-all hover:shadow-md">
