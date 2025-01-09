@@ -1,33 +1,24 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { auth } from '../config/firebase';
 
 export const withAuthProtection = (WrappedComponent) => {
   return function ProtectedRoute(props) {
     const navigate = useNavigate();
-    const location = useLocation();
 
     useEffect(() => {
-      const checkAuth = () => {
-        try {
-          const user = localStorage.getItem('user');
-          console.log('user : ', user);
-          if (!user) {
-            navigate('/login');
-            return false;
-          }
-          return true;
-        } catch (error) {
-          console.error('Error checking authentication:', error);
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (!user) {
           navigate('/login');
-          return false;
         }
-      };
+      });
 
-      const isAuthenticated = checkAuth();
-      console.log('isAuthenticated >>>', isAuthenticated);
-      if (!isAuthenticated) {
-        return;
+      // Initial check
+      if (!auth.currentUser) {
+        navigate('/login');
       }
+
+      return () => unsubscribe();
     }, [navigate]);
 
     return <WrappedComponent {...props} />;
