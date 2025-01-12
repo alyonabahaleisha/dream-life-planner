@@ -7,6 +7,8 @@ import Layout from './components/Layout';
 import LoginPage from './components/LoginPage';
 import LifeAssessment from './components/Assessment/LifeAssessment';
 import Roadmap from './components/Roadmap';
+import PricingPage from './components/PricingPage';
+import PaymentResult from './components/PaymentResult';
 import { withAuthProtection } from './components/AuthProtection';
 import { useDevSettings } from './hooks/useDevSettings';
 
@@ -43,6 +45,18 @@ const router = createBrowserRouter([
       {
         path: "roadmap",
         element: <ProtectedRoadmap />
+      },
+      {
+        path: "pricing",
+        element: <PricingPage />
+      },
+      {
+        path: "payment/success",
+        element: <PaymentResult status="success" />
+      },
+      {
+        path: "payment/cancel",
+        element: <PaymentResult status="cancel" />
       }
     ]
   }
