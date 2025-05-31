@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 export const useDevSettings = create(
   persist(
     (set) => ({
-      useMockApi: true, // Default to true for development
+      useMockApi: false, // Default to false - use real API
       setUseMockApi: (value) => {
         console.log('Setting mock API:', value);
         set({ useMockApi: value });
