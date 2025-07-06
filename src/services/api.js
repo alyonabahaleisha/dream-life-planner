@@ -1,6 +1,7 @@
 // src/services/api.js
 import { mockOpenAIService } from './mockOpenAI';
 import { getDevSettings } from '../hooks/useDevSettings';
+import { usageTrackingService } from './usageTracking';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -21,7 +22,7 @@ class APIError extends Error {
   }
 }
 
-async function makeAPICall(endpoint, data) {
+async function makeAPICall(endpoint, data, onUsageError) {
   try {
     if (shouldUseMocks()) {
       console.log(`Using mock data for ${endpoint}`);
@@ -32,19 +33,8 @@ async function makeAPICall(endpoint, data) {
       throw new Error('API URL is not configured. Please check your environment variables.');
     }
    
-    const response = await fetch(`${API_URL}/openai/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new APIError(error.message || 'API request failed', response.status);
-    }
-
+    // Use the usage tracking service for API calls
+    const response = await usageTrackingService.makeAPICall(endpoint, data, onUsageError);
     return response;
   } catch (error) {
     console.error(`API call failed for ${endpoint}:`, error);
@@ -110,9 +100,9 @@ async function getMockResponse(endpoint, data) {
   }
 }
 
-export async function generateStory(dreamLife, onChunk) {
+export async function generateStory(dreamLife, onChunk, onUsageError) {
   try {
-    const response = await makeAPICall('generate-story', { dreamLife });
+    const response = await makeAPICall('generate-story', { dreamLife }, onUsageError);
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
@@ -130,9 +120,9 @@ export async function generateStory(dreamLife, onChunk) {
   }
 }
 
-export async function generateDalleImage(dreamLife) {
+export async function generateDalleImage(dreamLife, onUsageError) {
   try {
-    const response = await makeAPICall('generate-image', { dreamLife });
+    const response = await makeAPICall('generate-image', { dreamLife }, onUsageError);
     return response.json();
   } catch (error) {
     console.error('Error generating image:', error);
@@ -140,9 +130,9 @@ export async function generateDalleImage(dreamLife) {
   }
 }
 
-export async function generateQuestions(dreamLife) {
+export async function generateQuestions(dreamLife, onUsageError) {
   try {
-    const response = await makeAPICall('generate-questions', { dreamLife });
+    const response = await makeAPICall('generate-questions', { dreamLife }, onUsageError);
     return response.json();
   } catch (error) {
     console.error('Error generating questions:', error);
@@ -150,9 +140,9 @@ export async function generateQuestions(dreamLife) {
   }
 }
 
-export async function generateRoadmap(dreamLife, answers) {
+export async function generateRoadmap(dreamLife, answers, onUsageError) {
   try {
-    const response = await makeAPICall('generate-roadmap', { dreamLife, answers });
+    const response = await makeAPICall('generate-roadmap', { dreamLife, answers }, onUsageError);
     return response.json();
   } catch (error) {
     console.error('Error generating roadmap:', error);
@@ -160,9 +150,9 @@ export async function generateRoadmap(dreamLife, answers) {
   }
 }
 
-export async function generateMilestones(dreamLife, answers) {
+export async function generateMilestones(dreamLife, answers, onUsageError) {
   try {
-    const response = await makeAPICall('generate-milestones', { dreamLife, answers });
+    const response = await makeAPICall('generate-milestones', { dreamLife, answers }, onUsageError);
     return response.json();
   } catch (error) {
     console.error('Error generating milestones:', error);
@@ -170,13 +160,13 @@ export async function generateMilestones(dreamLife, answers) {
   }
 }
 
-export async function generate30DayPlan(dreamLife, answers, milestones) {
+export async function generate30DayPlan(dreamLife, answers, milestones, onUsageError) {
   try {
     const response = await makeAPICall('generate-action-plan', {
       dreamLife,
       answers,
       milestones
-    });
+    }, onUsageError);
     return response.json();
   } catch (error) {
     console.error('Error generating action plan:', error);
@@ -184,12 +174,12 @@ export async function generate30DayPlan(dreamLife, answers, milestones) {
   }
 }
 
-export async function generateValuesTransition(dreamLife, answers) {
+export async function generateValuesTransition(dreamLife, answers, onUsageError) {
   try {
     const response = await makeAPICall('generate-values-transition', {
       dreamLife,
       answers
-    });
+    }, onUsageError);
     return response.json();
   } catch (error) {
     console.error('Error generating values transition:', error);

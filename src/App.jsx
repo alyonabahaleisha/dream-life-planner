@@ -3,9 +3,12 @@ import { useState, useRef, useEffect } from 'react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import DreamInput from './components/DreamInput/DreamInput';
 import StoryResponse from './components/DreamInput/StoryResponse';
+import StoryResponseEnhanced from './components/DreamInput/StoryResponseEnhanced';
 import PaywallDialog from './components/PaywallDialog';
+import DreamAuthDialog from './components/DreamAuthDialog';
 import { generateStory, generateDalleImage } from './services/api';
 import { dreamTrackingService } from './services/dreamTracking';
+import { useUsageTracking } from './hooks/useUsageTracking';
 import { Alert, AlertTitle, AlertDescription } from './components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -15,39 +18,35 @@ function App() {
   const [image, setImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [error, setError] = useState(null);
-  const [dreamStatus, setDreamStatus] = useState(null);
+  const [useEnhancedStory, setUseEnhancedStory] = useState(true); // Toggle this to switch versions
   
   const textareaRef = useRef(null);
+  const {
+    usageStatus,
+    showPaywall,
+    showAuthPrompt,
+    handleUsageError,
+    closePaywall,
+    closeAuthPrompt,
+    checkUsage
+  } = useUsageTracking();
 
   useEffect(() => {
-    // Check dream submission status on component mount
-    const checkDreamStatus = async () => {
-      try {
-        const status = await dreamTrackingService.canSubmitDream();
-        setDreamStatus(status);
-      } catch (error) {
-        console.error('Error checking dream status:', error);
-        setError('Unable to check dream submission status');
-      }
-    };
-
-    checkDreamStatus();
+    // Usage is checked automatically by the hook
   }, []);
 
   const handleSubmit = async (e) => {
-    console.log('hello >>>>>', e)
     e.preventDefault();
     setError(null);
     
     try {
-      console.log('trackingResult >>>>>')
-      // Track dream submission
-      const trackingResult = await dreamTrackingService.trackDreamSubmission(dreamLife);
-      console.log('trackingResult >>>>>', trackingResult)
-      if (!trackingResult.success) {
-        setShowPaywall(true);
+      // Check if user can make more requests
+      if (!usageStatus.canUseMore && !usageStatus.isPremium) {
+        handleUsageError({
+          requiresPaywall: !usageStatus.isAnonymous,
+          requiresAuth: usageStatus.isAnonymous
+        });
         return;
       }
 
@@ -58,15 +57,20 @@ function App() {
       setShowResponse(true);
       localStorage.setItem('dreamLife', dreamLife);
 
-      generateDalleImage(dreamLife).then(imageData => {
+      // Generate image (if available)
+      generateDalleImage(dreamLife, handleUsageError).then(imageData => {
         if (imageData) {
           setImage(imageData);
         }
       });
 
+      // Generate story with usage tracking
       await generateStory(dreamLife, (chunk) => {
         setStory(prev => prev + chunk);
-      });
+      }, handleUsageError);
+
+      // Refresh usage status after successful generation
+      checkUsage(true);
     } catch (error) {
       console.error('Error generating content:', error);
       setError('Failed to generate dream content. Please try again.');
@@ -116,23 +120,36 @@ function App() {
                 handleSubmit={handleSubmit}
                 isLoading={isLoading}
                 textareaRef={textareaRef}
-                remainingDreams={dreamStatus?.remainingDreams}
-                error={error}
+                usageStatus={usageStatus}
               />
             ) : (
-              <StoryResponse
-                story={story}
-                image={image}
-                isLoading={isLoading}
-                onReset={handleReset}
-              />
+              useEnhancedStory ? (
+                <StoryResponseEnhanced
+                  story={story}
+                  image={image}
+                  isLoading={isLoading}
+                  onReset={handleReset}
+                />
+              ) : (
+                <StoryResponse
+                  story={story}
+                  image={image}
+                  isLoading={isLoading}
+                  onReset={handleReset}
+                />
+              )
             )}
           </div>
         </div>
 
         <PaywallDialog 
           isOpen={showPaywall} 
-          onClose={() => setShowPaywall(false)} 
+          onClose={closePaywall} 
+        />
+        
+        <DreamAuthDialog
+          isOpen={showAuthPrompt}
+          onClose={closeAuthPrompt}
         />
       </>
     </HelmetProvider>

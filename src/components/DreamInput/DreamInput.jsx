@@ -9,7 +9,8 @@ const DreamInput = ({
   setDreamLife, 
   handleSubmit, 
   isLoading,
-  textareaRef 
+  textareaRef,
+  usageStatus
 }) => {
   const handleSuggestionClick = (suggestion) => {
     setDreamLife(prev => {
@@ -26,6 +27,20 @@ const DreamInput = ({
       <h1 className="text-5xl font-normal text-center mb-8 text-gray-800">
         What does your dream life look like?
       </h1>
+      
+      {/* Usage Status */}
+      {!usageStatus.loading && !usageStatus.isPremium && (
+        <div className="text-center mb-4">
+          <p className="text-sm text-gray-600">
+            {usageStatus.isAnonymous ? (
+              <>You have <span className="font-semibold">{usageStatus.remaining}</span> free attempts. 
+              Sign in for 20 free attempts!</>
+            ) : (
+              <>You have <span className="font-semibold">{usageStatus.remaining}</span> of {usageStatus.limit} free attempts remaining</>
+            )}
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="mb-6">
         <div className="bg-white rounded-2xl shadow-lg relative">

@@ -43,7 +43,7 @@ const PaywallDialog = ({ isOpen, onClose }) => {
         <DialogHeader>
           <DialogTitle className="text-2xl">Unlock Your Full Potential</DialogTitle>
           <DialogDescription className="text-base">
-            You've used your free dream generation. Upgrade to Premium to create unlimited dreams and access exclusive features.
+            You've used all 20 of your free attempts. Upgrade to Premium for unlimited access to all AI features and create as many dreams as you want!
           </DialogDescription>
         </DialogHeader>
 
