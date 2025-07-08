@@ -3,58 +3,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "../ui/button";
 import { 
   X, 
-  Clock, 
-  ChevronRight, 
-  Sun, 
-  Sunrise, 
-  Sunset,
   Sparkles,
-  ArrowRight,
-  Camera
+  ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AuthModal from '../AuthModal';
 import LoadingScreen from './LoadingScreen';
 import AHAMomentsDisplay from './AHAMomentsDisplay';
 import GratitudeStoryChat from './GratitudeStoryChat';
+import GratitudeStoryChatEnhanced from './GratitudeStoryChatEnhanced';
+import GratitudeStoryChatUltraEnhanced from './GratitudeStoryChatUltraEnhanced';
 import ImageReveal from './ImageReveal'; 
-
-const TimelineItem = ({ time, activity, isLast }) => (
-  <div className="flex gap-4">
-    <div className="flex flex-col items-center">
-      <div className="w-3 h-3 rounded-full bg-blue-400 border-4 border-blue-100" />
-      {!isLast && <div className="w-0.5 h-full bg-blue-100 my-1" />}
-    </div>
-    
-    <div className="flex-1 pb-8">
-      <div className="bg-gray-50 rounded-xl p-4 pr-8 relative group hover:bg-gray-100 transition-colors">
-        <div className="text-gray-900 font-medium">{activity.split(':')[0]}</div>
-        <div className="text-gray-500 text-sm mt-1">
-          {activity.split(':').slice(1).join(':').trim()}
-        </div>
-        <div className="absolute right-4 top-4 text-sm text-gray-500">{time}</div>
-      </div>
-    </div>
-  </div>
-);
-
-const TimelineSection = ({ title, items, icon: Icon }) => (
-  <div className="relative">
-    <div className="flex items-center gap-2 mb-6">
-      <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-        <Icon className="h-5 w-5 text-blue-500" />
-      </div>
-      <h4 className="text-lg font-medium text-gray-900">{title}</h4>
-    </div>
-    {items.map((item, index) => (
-      <TimelineItem
-        key={index}
-        {...item}
-        isLast={index === items.length - 1}
-      />
-    ))}
-  </div>
-);
 
 const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess }) => {
   const [phase, setPhase] = useState('loading'); // 'loading', 'aha', 'story', 'schedule'
@@ -64,8 +23,39 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
   const navigate = useNavigate();
 
   // Parse story content to extract AHA moments
-  const parseStoryContent = (text) => {
-    if (!text) return { ahaMoments: [], storyPart: '', schedule: {} };
+  const parseStoryContent = (data) => {
+    // Try to parse as JSON first (new dialogue format)
+    if (typeof data === 'string' && data.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.dialogue) {
+          return {
+            ahaMoments: parsed.ahaMoments || [],
+            dialogue: parsed.dialogue,
+            universeWhispers: parsed.universeWhispers || [],
+            storyMoments: [], // Empty for new format
+            isNewFormat: true
+          };
+        }
+      } catch (e) {
+        // Not JSON, continue with legacy parsing
+      }
+    }
+    
+    // Check if we have the new dialogue format as object
+    if (typeof data === 'object' && data.dialogue) {
+      return {
+        ahaMoments: data.ahaMoments || [],
+        dialogue: data.dialogue,
+        universeWhispers: data.universeWhispers || [],
+        storyMoments: [], // Empty for new format
+        isNewFormat: true
+      };
+    }
+    
+    // Legacy text parsing for backward compatibility
+    const text = typeof data === 'string' ? data : (data.story || '');
+    if (!text) return { ahaMoments: [], storyPart: '', storyMoments: [], schedule: {}, isNewFormat: false };
     
     // Extract AHA moments section
     const ahaMomentsMatch = text.match(/\[AHA_MOMENTS\]([\s\S]*?)\[STORY\]/);
@@ -115,47 +105,21 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
     
     return {
       ahaMoments: extractedAhas.slice(0, 5),
-      storyMoments: moments,
-      schedule: parseSchedule(schedulePart)
+      storyMoments: moments
     };
   };
 
-  const parseSchedule = (schedulePart) => {
-    const sections = { morning: [], day: [], evening: [] };
-    let currentSection = null;
-    
-    schedulePart.split('\n').forEach(line => {
-      const trimmedLine = line.trim();
-      
-      if (trimmedLine === '[MORNING]') currentSection = 'morning';
-      else if (trimmedLine === '[DAY]') currentSection = 'day';
-      else if (trimmedLine === '[EVENING]') currentSection = 'evening';
-      else if (trimmedLine && currentSection) {
-        const timeMatch = trimmedLine.match(/^([0-9]{1,2}:[0-9]{2}\s*[APM]{2}|[0-9]{1,2}\s*[APM]{2})/i);
-        if (timeMatch) {
-          const time = timeMatch[1].toUpperCase();
-          const rest = trimmedLine.slice(timeMatch[0].length).trim();
-          const parts = rest.split(':').map(part => part.trim()).filter(Boolean);
-          
-          if (parts.length > 0) {
-            sections[currentSection].push({
-              time: time,
-              activity: parts.join(': ')
-            });
-          }
-        }
-      }
-    });
-    
-    return sections;
-  };
 
   // Process story when it arrives
   useEffect(() => {
     if (story && !isLoading) {
-      const { ahaMoments: ahas, storyMoments: moments, schedule } = parseStoryContent(story);
+      console.log('Processing story:', story);
+      const parsedContent = parseStoryContent(story);
+      console.log('Parsed content:', parsedContent);
+      
+      const { ahaMoments: ahas, storyMoments: moments } = parsedContent;
       setAhaMoments(ahas);
-      setStoryMoments(moments);
+      setStoryMoments(moments || []);
       
       // Start AHA phase after a brief delay
       setTimeout(() => {
@@ -171,51 +135,8 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
     navigate('/assessment');
   };
 
-  const formatContent = (text) => {
-    if (!text) return { story: '', schedule: {} };
-    
-    const parts = text.split('[SCHEDULE]');
-    if (parts.length < 2) return { story: text, schedule: {} };
 
-    const storyPart = parts[0].replace('[STORY]', '').trim();
-    const schedulePart = parts[1].trim();
-
-    return { story: storyPart, schedule: parseSchedule(schedulePart) };
-  };
-
-  const { schedule } = formatContent(story);
-
-  // Parse story into themed chapters (used in story phase)
-  const storyChapters = [
-    {
-      id: 'morning',
-      title: 'Your Perfect Morning',
-      icon: '🌅',
-      content: storyMoments[0]?.content || '',
-      highlight: 'Every day starts with purpose and excitement'
-    },
-    {
-      id: 'work',
-      title: 'Work That Feels Like Play',
-      icon: '⚡',
-      content: storyMoments[1]?.content || '',
-      highlight: 'Success flows naturally when you love what you do'
-    },
-    {
-      id: 'impact',
-      title: 'Your Growing Influence',
-      icon: '⭐',
-      content: storyMoments[2]?.content || '',
-      highlight: 'People seek you out because of who you\'ve become'
-    },
-    {
-      id: 'freedom',
-      title: 'Ultimate Freedom',
-      icon: '❤️',
-      content: storyMoments[3]?.content || '',
-      highlight: 'You choose your path, every single day'
-    }
-  ].filter(ch => ch.content);
+  // Removed schedule functionality
 
   // Ensure all hooks are called before any conditional returns
 
@@ -225,17 +146,38 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
   }
 
   // AHA Moments Phase
-  if (phase === 'aha' && ahaMoments.length > 0) {
-    return (
-      <AHAMomentsDisplay
-        ahaMoments={ahaMoments}
-        onComplete={() => setPhase('story')}
-      />
-    );
+  if (phase === 'aha') {
+    console.log('AHA phase with moments:', ahaMoments);
+    if (ahaMoments.length > 0) {
+      return (
+        <AHAMomentsDisplay
+          ahaMoments={ahaMoments}
+          onComplete={() => setPhase('story')}
+        />
+      );
+    } else {
+      // Skip AHA phase if no moments
+      console.log('No AHA moments, skipping to story phase');
+      setPhase('story');
+    }
   }
 
   // Story Phase - Gratitude Story with Progressive Reveal
   if (phase === 'story') {
+    const parsedContent = parseStoryContent(story);
+    
+    // Use enhanced chat for new dialogue format
+    if (parsedContent.isNewFormat && parsedContent.dialogue) {
+      return (
+        <GratitudeStoryChatUltraEnhanced
+          dialogueData={parsedContent}
+          onComplete={() => setPhase('image')}
+          onReset={onReset}
+        />
+      );
+    }
+    
+    // Fallback to old chat for legacy format
     const storyContent = storyMoments.map(m => m.content).join('\n\n');
     return (
       <GratitudeStoryChat
@@ -252,77 +194,19 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
       <ImageReveal
         image={image}
         ahaMoments={ahaMoments}
-        onComplete={() => setPhase('schedule')}
+        onComplete={() => {
+          // Skip schedule phase, go to sign up
+          setIsSignUpOpen(true);
+        }}
         onReset={onReset}
       />
     );
   }
 
-  // Schedule Phase
-  if (phase === 'schedule') {
+  // Show auth modal after image phase
+  if (isSignUpOpen) {
     return (
       <div className="w-full max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8 relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onReset}
-            className="absolute top-4 right-4"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          
-          <div className="space-y-6">
-            <h3 className="text-xl font-medium text-gray-800 mb-6">
-              Your Dream Life Schedule
-            </h3>
-            <div className="pl-4 space-y-12">
-              {schedule.morning?.length > 0 && (
-                <TimelineSection 
-                  title="Morning Routine" 
-                  items={schedule.morning}
-                  icon={Sunrise}
-                />
-              )}
-              {schedule.day?.length > 0 && (
-                <TimelineSection 
-                  title="Daytime Activities" 
-                  items={schedule.day}
-                  icon={Sun}
-                />
-              )}
-              {schedule.evening?.length > 0 && (
-                <TimelineSection 
-                  title="Evening Relaxation" 
-                  items={schedule.evening}
-                  icon={Sunset}
-                />
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-12 flex justify-between items-center">
-              <Button
-                onClick={onReset}
-                variant="outline"
-                className="text-gray-600 gap-2"
-              >
-                <ArrowRight className="w-4 h-4 rotate-180" />
-                Create Another Dream
-              </Button>
-
-              <Button
-                onClick={() => setIsSignUpOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-11 text-base px-6"
-              >
-                <Sparkles className="w-4 h-4" />
-                Make It Reality
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Authentication Modal */}
         <AuthModal 
           isOpen={isSignUpOpen}
           setIsOpen={setIsSignUpOpen}

@@ -103,6 +103,24 @@ async function getMockResponse(endpoint, data) {
 export async function generateStory(dreamLife, onChunk, onUsageError) {
   try {
     const response = await makeAPICall('generate-story', { dreamLife }, onUsageError);
+    
+    // Clone the response to check headers safely
+    const clonedResponse = response.clone();
+    
+    // Try to parse as JSON first
+    try {
+      const jsonData = await clonedResponse.json();
+      // If it's JSON and has dialogue, it's the new format
+      if (jsonData && jsonData.dialogue) {
+        onChunk(JSON.stringify(jsonData));
+        return;
+      }
+      // Otherwise fall through to text handling
+    } catch (jsonError) {
+      // Not JSON, continue with streaming
+    }
+    
+    // Handle streaming text response (legacy format)
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
