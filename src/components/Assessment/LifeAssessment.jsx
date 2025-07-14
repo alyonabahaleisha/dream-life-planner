@@ -82,7 +82,7 @@ const LifeAssessment = () => {
 
   const generatePlan = () => {
     const dreamLife = localStorage.getItem('dreamLife');
-    navigate('/roadmap', { 
+    navigate('/dashboard', { 
       state: { 
         answers,
         dreamLife

@@ -208,3 +208,17 @@ export async function generateValuesTransition(dreamLife, answers, onUsageError)
     };
   }
 }
+
+export async function generateBlueprint(dreamDescription, assessmentData, onUsageError) {
+  try {
+    const response = await makeAPICall('generate-blueprint', {
+      dreamDescription,
+      assessmentData
+    }, onUsageError);
+    const data = await response.json();
+    return data.blueprint || data;
+  } catch (error) {
+    console.error('Error generating blueprint:', error);
+    throw error;
+  }
+}

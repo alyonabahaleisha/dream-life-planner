@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import LoginPage from './components/LoginPage';
 import LifeAssessment from './components/Assessment/LifeAssessment';
 import Roadmap from './components/Roadmap';
+import DreamDashboard from './components/Dashboard/DreamDashboard';
 import PricingPage from './components/PricingPage';
 import PaymentResult from './components/PaymentResult';
 import { withAuthProtection } from './components/AuthProtection';
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
       {
         path: "assessment",
         element: <LifeAssessment />
+      },
+      {
+        path: "dashboard",
+        element: <DreamDashboard />
       },
       {
         path: "roadmap",
