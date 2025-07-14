@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Create protected versions of components
-const ProtectedLifeAssessment = withAuthProtection(LifeAssessment);
+// const ProtectedLifeAssessment = withAuthProtection(LifeAssessment); // Removed for MVP
 const ProtectedRoadmap = withAuthProtection(Roadmap);
 
 // Get the base URL from Vite's environment variables
@@ -40,7 +40,7 @@ const router = createBrowserRouter([
       },
       {
         path: "assessment",
-        element: <ProtectedLifeAssessment />
+        element: <LifeAssessment />
       },
       {
         path: "roadmap",

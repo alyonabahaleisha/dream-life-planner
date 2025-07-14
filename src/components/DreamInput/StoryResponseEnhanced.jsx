@@ -13,11 +13,13 @@ import AHAMomentsDisplay from './AHAMomentsDisplay';
 import GratitudeStoryChat from './GratitudeStoryChat';
 import GratitudeStoryChatEnhanced from './GratitudeStoryChatEnhanced';
 import GratitudeStoryChatUltraEnhanced from './GratitudeStoryChatUltraEnhanced';
-import ImageReveal from './ImageReveal'; 
+import ImageReveal from './ImageReveal';
+import DreamRealityBridge from './DreamRealityBridge'; 
 
 const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess }) => {
-  const [phase, setPhase] = useState('loading'); // 'loading', 'aha', 'story', 'schedule'
+  const [phase, setPhase] = useState('loading'); // 'loading', 'aha', 'story', 'bridge', 'assessment'
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
+  const [showBridge, setShowBridge] = useState(false);
   const [ahaMoments, setAhaMoments] = useState([]);
   const [storyMoments, setStoryMoments] = useState([]);
   const navigate = useNavigate();
@@ -171,7 +173,10 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
       return (
         <GratitudeStoryChatUltraEnhanced
           dialogueData={parsedContent}
-          onComplete={() => setPhase('image')}
+          onComplete={() => {
+            // Navigate directly to assessment
+            navigate('/assessment');
+          }}
           onReset={onReset}
         />
       );
@@ -188,17 +193,17 @@ const StoryResponseEnhanced = ({ story, image, isLoading, onReset, onAuthSuccess
     );
   }
 
-  // Enhanced Image Phase
-  if (phase === 'image') {
+  // Image phase removed - images now shown inline in chat
+
+  // Bridge Phase - Transition to Assessment
+  if (phase === 'bridge') {
     return (
-      <ImageReveal
-        image={image}
-        ahaMoments={ahaMoments}
-        onComplete={() => {
-          // Skip schedule phase, go to sign up
-          setIsSignUpOpen(true);
+      <DreamRealityBridge
+        dreamData={story}
+        onContinue={() => {
+          // Navigate to assessment
+          navigate('/assessment');
         }}
-        onReset={onReset}
       />
     );
   }

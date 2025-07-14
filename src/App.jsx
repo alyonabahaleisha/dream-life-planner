@@ -57,12 +57,12 @@ function App() {
       setShowResponse(true);
       localStorage.setItem('dreamLife', dreamLife);
 
-      // Generate image (if available)
-      generateDalleImage(dreamLife, handleUsageError).then(imageData => {
-        if (imageData) {
-          setImage(imageData);
-        }
-      });
+      // Image generation now happens inline with chat messages
+      // generateDalleImage(dreamLife, handleUsageError).then(imageData => {
+      //   if (imageData) {
+      //     setImage(imageData);
+      //   }
+      // });
 
       // Generate story with usage tracking
       await generateStory(dreamLife, (chunk) => {

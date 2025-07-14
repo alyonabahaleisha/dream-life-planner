@@ -153,6 +153,10 @@ const GratitudeStoryChatUltraEnhanced = ({ dialogueData, onComplete, onReset }) 
     }
   }, [visibleMessages, typedText, showTypingIndicator]);
   
+  // Check for bridge transition
+  const lastMessage = messages[messages.length - 1];
+  const hasBridgeTransition = lastMessage?.bridge_transition;
+  
   // Auto-advance to next message
   useEffect(() => {
     if (showMoreButton && !isTyping) {
@@ -161,16 +165,14 @@ const GratitudeStoryChatUltraEnhanced = ({ dialogueData, onComplete, onReset }) 
           setCurrentMessageIndex(currentMessageIndex + 1);
           setShowMoreButton(false);
         } else {
-          // All messages shown, complete after a delay
-          setTimeout(() => {
-            onComplete();
-          }, 3000);
+          // All messages shown - wait for user to click continue button
+          // No auto-advance
         }
       }, 1500); // 1.5 second pause between messages
       
       return () => clearTimeout(timer);
     }
-  }, [showMoreButton, isTyping, currentMessageIndex, messages.length, onComplete]);
+  }, [showMoreButton, isTyping, currentMessageIndex, messages.length, onComplete, hasBridgeTransition]);
   
   // Get message bubble style based on emotion and speaker
   const getMessageStyle = (message) => {
@@ -234,6 +236,31 @@ const GratitudeStoryChatUltraEnhanced = ({ dialogueData, onComplete, onReset }) 
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {formatMessageText(message.text)}
                       </p>
+                      {/* Display image if present */}
+                      {message.image_url && (
+                        <div className="mt-3 rounded-lg overflow-hidden">
+                          <img 
+                            src={message.image_url} 
+                            alt="Vision of your dream"
+                            className="w-full h-auto"
+                            onLoad={() => {
+                              // Scroll to show image when loaded
+                              if (chatContainerRef.current) {
+                                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                      {/* Show loading state if image is expected but not loaded yet */}
+                      {message.image_trigger && !message.image_url && !message.image_error && (
+                        <div className="mt-3 rounded-lg bg-gray-100 p-8 text-center">
+                          <div className="inline-flex items-center gap-2 text-gray-500">
+                            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm">Creating your vision...</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Reactions */}
@@ -278,6 +305,15 @@ const GratitudeStoryChatUltraEnhanced = ({ dialogueData, onComplete, onReset }) 
                       {formatMessageText(typedText)}
                       <span className="inline-block w-1 h-4 bg-current animate-pulse ml-0.5" />
                     </p>
+                    {/* Show image loading state if image_trigger exists */}
+                    {currentMessage.image_trigger && !isTyping && (
+                      <div className="mt-3 rounded-lg bg-gray-100 p-8 text-center">
+                        <div className="inline-flex items-center gap-2 text-gray-500">
+                          <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                          <span className="text-sm">Creating your vision...</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -297,19 +333,17 @@ const GratitudeStoryChatUltraEnhanced = ({ dialogueData, onComplete, onReset }) 
             </div>
           )}
           
-          {/* Universe Whispers */}
-          {!isTyping && !showTypingIndicator && visibleMessages.length === messages.length && dialogueData?.universeWhispers && (
-            <div className="mt-8 mb-4 mx-auto max-w-[90%]">
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="text-xs font-medium text-gray-600 mb-3 text-center uppercase tracking-wider">Universe Whispers</h3>
-                <div className="space-y-2">
-                  {dialogueData.universeWhispers.map((whisper, index) => (
-                    <p key={index} className="text-gray-600 italic text-xs text-center leading-relaxed">
-                      {whisper}
-                    </p>
-                  ))}
-                </div>
-              </div>
+          
+          {/* Continue Button - Always show after chat completion */}
+          {!isTyping && !showTypingIndicator && visibleMessages.length === messages.length && (
+            <div className="mt-8 mb-4 mx-auto max-w-[90%] text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Button 
+                onClick={onComplete}
+                className="bg-gradient-to-r from-purple-600 to-gray-700 text-white px-8 py-3 rounded-lg text-lg hover:shadow-lg transition-all duration-300"
+              >
+                Continue to Build Your Roadmap →
+              </Button>
+              <p className="text-xs text-gray-500 mt-2">Answer a few questions to create your personalized plan</p>
             </div>
           )}
         </div>
